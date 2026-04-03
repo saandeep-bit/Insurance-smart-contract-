@@ -1,0 +1,72 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+contract IPProtection {
+
+    struct IP {
+        uint id;
+        string ipType;
+        string description;
+        address owner;
+        address[] ownershipHistory;
+    }
+
+    uint public ipCount;
+
+    mapping(uint => IP) public ips;
+
+    // EVENTS (important for tracking)
+    event IPRegistered(uint id, address owner, string ipType);
+    event OwnershipTransferred(uint id, address from, address to);
+
+    //  1. Register IP
+    function registerIP(string memory _type, string memory _desc) public {
+        ipCount++;
+
+        IP storage newIP = ips[ipCount];
+        newIP.id = ipCount;
+        newIP.ipType = _type;
+        newIP.description = _desc;
+        newIP.owner = msg.sender;
+        newIP.ownershipHistory.push(msg.sender);
+
+        emit IPRegistered(ipCount, msg.sender, _type);
+    }
+
+    //  2. Transfer Ownership
+    function transferOwnership(uint _id, address _newOwner) public {
+        require(_id > 0 && _id <= ipCount, "Invalid IP ID");
+        require(msg.sender == ips[_id].owner, "Not owner");
+
+        address oldOwner = ips[_id].owner;
+
+        ips[_id].owner = _newOwner;
+        ips[_id].ownershipHistory.push(_newOwner);
+
+        emit OwnershipTransferred(_id, oldOwner, _newOwner);
+    }
+
+    //  3. View IP Details
+    function getIP(uint _id) public view returns (
+        uint,
+        string memory,
+        string memory,
+        address
+    ) {
+        require(_id > 0 && _id <= ipCount, "Invalid IP ID");
+
+        IP memory ip = ips[_id];
+        return (ip.id, ip.ipType, ip.description, ip.owner);
+    }
+
+    //  4. Get Ownership History
+    function getOwnershipHistory(uint _id) public view returns (address[] memory) {
+        require(_id > 0 && _id <= ipCount, "Invalid IP ID");
+        return ips[_id].ownershipHistory;
+    }
+
+    //  5. Verify IP (simple check)
+    function verifyIP(uint _id) public view returns (bool) {
+        return (_id > 0 && _id <= ipCount);
+    }
+}
